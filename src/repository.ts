@@ -70,6 +70,16 @@ export class VaultRepository {
     return this.app.vault.create(path, content);
   }
 
+  async updateManagedFields(file: TFile, kind: Kind, title: string, tags: string[], status: string): Promise<void> {
+    await this.app.fileManager.processFrontMatter(file, frontmatter => {
+      frontmatter.type = kind;
+      frontmatter.title = title.trim();
+      frontmatter.tags = tags;
+      frontmatter.vault_organizer = { schema: 1, kind, ...(kind === "project" ? {} : { storage_mode: "flat" }) };
+      if (kind === "project") frontmatter.status = status;
+    });
+  }
+
   private quickDestination(input: NoteInput): string {
     const root = this.settings.quickNotes.root.path;
     if (input.storageMode === "date") return normalizePath(`${root}/${dateParts(input.createdAt, this.settings.quickNotes.dateHierarchy).join("/")}`);
