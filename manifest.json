@@ -1,0 +1,9 @@
+{
+  "id": "vault-organizer",
+  "name": "Vault Organizer",
+  "version": "0.4.0",
+  "minAppVersion": "1.5.0",
+  "description": "Sandboxed quick-note and project workflows with a focused, responsive vault dashboard.",
+  "author": "Red-Beard",
+  "isDesktopOnly": false
+}
