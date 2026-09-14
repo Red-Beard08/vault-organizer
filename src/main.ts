@@ -1,6 +1,6 @@
 import { Notice, Plugin, TFile } from "obsidian";
 import { VaultOrganizerDashboard, VIEW_TYPE } from "./dashboard";
-import { CaptureModal, FileDetailModal, ManagedEditModal, MaintenanceModal, ProjectDetailModal, ProjectNoteModal } from "./modals";
+import { CaptureModal, FileDetailModal, ManagedEditModal, MaintenanceModal, ProjectDetailModal, ProjectListModal, ProjectNoteModal, RecordListModal } from "./modals";
 import { VaultRepository } from "./repository";
 import { VaultOrganizerSettingTab } from "./settings";
 import { DEFAULT_SETTINGS, NoteInput, NoteRecord, ProjectFolder, Settings } from "./types";
@@ -36,8 +36,8 @@ export default class VaultOrganizerPlugin extends Plugin {
   async createNote(kind: Kind, input: NoteInput): Promise<void> { const root = kind === "quick-note" ? this.settings.quickNotes.root : this.settings.projects.root; if (!root.confirmed) throw new Error("Confirm the workflow root in settings first."); const file = await this.repository.createNote(kind, input); new Notice(`Created ${file.path}`); if (this.settings.openCreatedNote) await this.openFile(file.path); }
   openRecord(record: NoteRecord, kind: Kind): void { const file = this.app.vault.getAbstractFileByPath(record.path); if (!(file instanceof TFile)) return; if (kind === "project") void this.openProject({ name: file.parent?.name ?? file.basename, hub: file.path, files: 1, modified: file.stat.mtime }); else new FileDetailModal(this.app, this, file).open(); }
   openProject(project: ProjectFolder): void { new ProjectDetailModal(this.app, this, project).open(); }
-  openQuickFiles(): void { this.openDashboard(); }
-  openProjects(): void { this.openDashboard(); }
+  openQuickFiles(): void { const root = this.settings.quickNotes.root; const records = this.repository.getRecords().filter(record => root.confirmed && inside(record.path, root.path)); new RecordListModal(this.app, this, "Quick-note files", records).open(); }
+  openProjects(): void { new ProjectListModal(this.app, this, this.repository.getProjectFolders()).open(); }
   addProjectNote(project: ProjectFolder): void { new ProjectNoteModal(this.app, this, project.hub.split("/").slice(0, -1).join("/")).open(); }
   editFile(file: TFile): void { const record = this.repository.getRecords().find(item => item.path === file.path); if (!record) { new Notice("This note is not managed by Vault Organizer yet."); return; } new ManagedEditModal(this.app, this, file, record).open(); }
   openCurrent(kind?: Kind): void { const file = this.app.workspace.getActiveFile(); if (!file) { new Notice("Open a Markdown note first."); return; } const record = this.repository.getRecords().find(item => item.path === file.path); if (!kind && !record?.ownership) { new Notice("This note is not managed by Vault Organizer yet."); return; } this.editFile(file); }
