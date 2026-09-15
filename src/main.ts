@@ -1,4 +1,5 @@
 import { Notice, Plugin, TFile } from "obsidian";
+import { registerDashboardModule, registerDashboardWidget } from "./dashboard-bridge";
 import { VaultOrganizerDashboard, VIEW_TYPE } from "./dashboard";
 import { CaptureModal, FileDetailModal, ManagedEditModal, MaintenanceModal, ProjectDetailModal, ProjectListModal, ProjectNoteModal, RecordListModal } from "./modals";
 import { VaultRepository } from "./repository";
@@ -47,3 +48,23 @@ export default class VaultOrganizerPlugin extends Plugin {
   async repairTrees(showNotice = true): Promise<void> { try { for (const root of [this.settings.quickNotes.root, this.settings.projects.root]) if (root.confirmed) await this.repository.ensureFolder(root.path); if (showNotice) new Notice("Configured file trees are healthy."); } catch (error) { new Notice(`Could not repair file trees: ${error instanceof Error ? error.message : String(error)}`); } }
   reviewMaintenance(): void { new MaintenanceModal(this.app, this).open(); }
 }
+// Red-Beard Dashboard integration: launcher module and independent summary widget.
+const rbDisposals = new WeakMap<object, () => void>();
+const rbOnload = VaultOrganizerPlugin.prototype.onload;
+VaultOrganizerPlugin.prototype.onload = async function(this: VaultOrganizerPlugin) {
+  await rbOnload.call(this);
+  const disposals = [
+    registerDashboardModule(this.app, { id: "vault-organizer", name: "Vault Organizer", command: "vault-organizer:open-dashboard", icon: "layout-dashboard", description: "Projects and managed vault files.", order: 20 }),
+    registerDashboardWidget(this.app, { id: "vault-organizer/overview", name: "Vault Organizer", description: "Projects and managed vault files.", icon: "layout-dashboard", defaultLayout: { w: 4, mobileW: 12, h: 2, order: 40 }, mobile: "responsive", render: (_ctx, container) => {
+      container.createEl("p", { text: "Projects and managed vault files." });
+      const button = container.createEl("button", { text: "Open Vault Organizer" });
+      button.onclick = () => void this.openDashboard();
+    } })
+  ];
+  rbDisposals.set(this, () => disposals.forEach(dispose => dispose()));
+};
+const rbOnunload = VaultOrganizerPlugin.prototype.onunload;
+VaultOrganizerPlugin.prototype.onunload = function(this: VaultOrganizerPlugin) {
+  rbDisposals.get(this)?.();
+ return rbOnunload ? rbOnunload.call(this) : undefined;
+};
