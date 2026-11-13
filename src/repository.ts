@@ -55,8 +55,24 @@ export class VaultRepository {
       current = current ? `${current}/${segment}` : segment;
       const item = this.app.vault.getAbstractFileByPath(current);
       if (item instanceof TFolder) continue;
-      if (item) throw new Error(`A file is blocking the folder ${current}.`);
-      await this.app.vault.createFolder(current);
+      if (item) throw new Error(`A file is blocking folder "${current}".`);
+      try {
+        await this.app.vault.createFolder(current);
+      } catch (error) {
+        // Another startup task can create the same directory after our lookup.
+        // Treat that race as success only after confirming the resulting path is a folder.
+        const retry = this.app.vault.getAbstractFileByPath(current);
+        if (retry instanceof TFolder) continue;
+        if (retry) throw new Error(`A file is blocking folder "${current}".`);
+
+        let diskType: "file" | "folder" | undefined;
+        try { diskType = (await this.app.vault.adapter.stat(current))?.type; } catch { /* Keep the original creation error below. */ }
+        if (diskType === "folder") continue;
+        if (diskType === "file") throw new Error(`A file is blocking folder "${current}".`);
+
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`Could not create folder "${current}": ${detail}`);
+      }
     }
   }
 

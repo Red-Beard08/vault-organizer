@@ -1,5 +1,9 @@
 # Vault Organizer
 
+## 0.4.1 — idempotent startup folder repair
+
+Startup folder repair now treats a concurrent creation as success only after confirming the path is a folder. Other errors identify the exact path, and a file blocking a configured folder is reported clearly.
+
 Vault Organizer provides a responsive Obsidian dashboard for quick notes and project folders. It keeps the existing Markdown-first model and uses confirmed vault-relative roots.
 
 ## Dashboard

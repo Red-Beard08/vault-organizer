@@ -1,13 +1,13 @@
 {
   "name": "vault-organizer",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A responsive Markdown-first Vault Organizer for quick notes and projects.",
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs production",
     "dev": "node esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run typecheck && npm run build"
+    "test": "npm run typecheck && npm run build && node --test tests/test-folder-creation.mjs"
   },
   "keywords": ["obsidian", "markdown", "notes", "projects"],
   "author": "Red-Beard",
